@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2"><Document>
+<name>Akcija sadnje drveća – Beograd</name>
+<Style id="petak"><IconStyle><color>ff0047b3</color><scale>1.1</scale><Icon><href>https://maps.google.com/mapfiles/kml/paddle/wht-blank.png</href></Icon></IconStyle></Style>
+<Style id="subota"><IconStyle><color>ffb84f1d</color><scale>1.1</scale><Icon><href>https://maps.google.com/mapfiles/kml/paddle/wht-blank.png</href></Icon></IconStyle></Style>
+<Folder><name>Petak, 11. decembar – Stari grad i Savski venac</name>
+<Placemark><name>6. Mali Kalemegdan</name><description>Pjarona de Mondezira, Dorćol
+Stari grad
+Petak, 11. decembar 2026.
+Vreme okupljanja: uskoro</description><styleUrl>#petak</styleUrl><Point><coordinates>20.4545625,44.8238125,0</coordinates></Point></Placemark>
+<Placemark><name>7. Spomenik braniocima Beograda 1915.</name><description>Obala majora Dragutina Gavrilovića, Dorćol
+Stari grad
+Petak, 11. decembar 2026.
+Vreme okupljanja: uskoro</description><styleUrl>#petak</styleUrl><Point><coordinates>20.4496916,44.8294032,0</coordinates></Point></Placemark>
+<Placemark><name>8. Park Milutina Milankovića</name><description>Tiršova, kod spomenika Milutinu Milankoviću (MZ Zapadni Vračar)
+Savski venac
+Petak, 11. decembar 2026.
+Vreme okupljanja: uskoro</description><styleUrl>#petak</styleUrl><Point><coordinates>20.4647844,44.7985709,0</coordinates></Point></Placemark>
+<Placemark><name>9. Park „Lepi izgled“</name><description>Drinska (MZ Slobodan Penezić-Krcun)
+Savski venac
+Petak, 11. decembar 2026.
+Vreme okupljanja: uskoro</description><styleUrl>#petak</styleUrl><Point><coordinates>20.4507577,44.7995571,0</coordinates></Point></Placemark>
+</Folder>
+<Folder><name>Subota, 12. decembar – Novi Beograd i Zemun</name>
+<Placemark><name>1. Blok 11b – Aleksinačkih rudara</name><description>Aleksinačkih rudara, Blok 11b (MZ Ikarus)
+Novi Beograd
+Subota, 12. decembar 2026.
+Vreme okupljanja: uskoro</description><styleUrl>#subota</styleUrl><Point><coordinates>20.4178,44.827359,0</coordinates></Point></Placemark>
+<Placemark><name>2. Studentski grad – Studentska 43</name><description>Studentska 43 (MZ Studentski grad)
+Novi Beograd
+Subota, 12. decembar 2026.
+Vreme okupljanja: uskoro</description><styleUrl>#subota</styleUrl><Point><coordinates>20.402219,44.825423,0</coordinates></Point></Placemark>
+<Placemark><name>3. Paviljoni – Sremskih odreda</name><description>Sremskih odreda, Paviljoni
+Novi Beograd
+Subota, 12. decembar 2026.
+Vreme okupljanja: uskoro</description><styleUrl>#subota</styleUrl><Point><coordinates>20.402219,44.8302,0</coordinates></Point></Placemark>
+<Placemark><name>4. Gradski park Zemun</name><description>Gradski park, Donji Grad
+Zemun
+Subota, 12. decembar 2026.
+Vreme okupljanja: uskoro</description><styleUrl>#subota</styleUrl><Point><coordinates>20.4086481,44.8406259,0</coordinates></Point></Placemark>
+<Placemark><name>5. Park Jelovac</name><description>Lazara Savatića, Kalvarija
+Zemun
+Subota, 12. decembar 2026.
+Vreme okupljanja: uskoro</description><styleUrl>#subota</styleUrl><Point><coordinates>20.3942284,44.8379639,0</coordinates></Point></Placemark>
+</Folder>
+</Document></kml>

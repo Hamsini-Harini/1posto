@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="sr-Latn">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Lokacije sadnje drveća – Fondacija 1%</title>
+<meta name="description" content="Lokacije, datumi i navigacija za volontersku akciju sadnje drveća u Beogradu.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f6f7f2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1a12" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%B3%3C/text%3E%3C/svg%3E">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"
+      integrity="sha512-h9FcoyWjHcOcmEVkxOfTLnmZFWIH0iZhZT1H2TbOq55xssQGEJHEaIm+PgoUaZbRvQTNTluNOEfb1ZRy6D3BOw=="
+      crossorigin="anonymous" referrerpolicy="no-referrer">
+<style>
+  :root {
+    --bg: #f6f7f2;
+    --surface: #ffffff;
+    --text: #111611;
+    --muted: #3d473e;
+    --border: #b9c2b6;
+    --brand: #1f5f2e;
+    --brand-text: #ffffff;
+    --focus: #0b57d0;
+    /* Boje dana – dovoljno kontrastne i u svetlom i u tamnom režimu */
+    --petak: #b34700;
+    --petak-soft: #fff1e6;
+    --subota: #1d4fb8;
+    --subota-soft: #e8efff;
+    --placeholder-bg: #fff7c2;
+    --placeholder-text: #5c4a00;
+    --shadow: 0 1px 2px rgba(0,0,0,.08), 0 2px 8px rgba(0,0,0,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0f1411;
+      --surface: #19211b;
+      --text: #f1f5ef;
+      --muted: #c3cdc1;
+      --border: #3b4a3e;
+      --brand: #7fd08f;
+      --brand-text: #0b140d;
+      --focus: #8ab4ff;
+      --petak: #ff9a52;
+      --petak-soft: #3a2414;
+      --subota: #86aaff;
+      --subota-soft: #17223d;
+      --placeholder-bg: #3d3510;
+      --placeholder-text: #ffe680;
+      --shadow: none;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; scroll-padding-top: 76px; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 18px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 0 16px; }
+  a { color: inherit; }
+  :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+  header.top { padding: 16px 0 4px; }
+  /* Logo na beloj podlozi da bude čitljiv i u tamnom režimu */
+  .logo-link { display: inline-block; background: #fff; border-radius: 12px; padding: 10px 14px; border: 1px solid var(--border); }
+  .logo { display: block; height: 52px; width: auto; }
+
+  .ph { /* vidljiva oznaka za placeholder tekst koji treba popuniti */
+    background: var(--placeholder-bg); color: var(--placeholder-text);
+    border-radius: 4px; padding: 0 4px; font-style: italic;
+  }
+
+  section { margin: 22px 0; }
+  h2 { font-size: 1.3rem; margin: 0 0 10px; }
+
+  .days { display: grid; gap: 10px; }
+  .day-box {
+    background: var(--surface); border: 2px solid var(--border); border-left-width: 10px;
+    border-radius: 10px; padding: 12px 14px; box-shadow: var(--shadow);
+  }
+  .day-box.petak { border-left-color: var(--petak); }
+  .day-box.subota { border-left-color: var(--subota); }
+  .day-box strong { display: block; font-size: 1.15rem; }
+
+
+  #map {
+    height: 58vh; min-height: 320px; max-height: 520px; border-radius: 10px;
+    border: 1px solid var(--border); background: var(--surface);
+  }
+  .map-fallback { padding: 16px; color: var(--muted); }
+
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin: 10px 0 0; padding: 0; list-style: none; font-size: 1rem; }
+  .legend li { display: flex; align-items: center; gap: 8px; }
+
+  /* Pinovi: petak = kvadrat, subota = krug (oblik + boja + broj, ne samo boja) */
+  .pin {
+    width: 34px; height: 34px; display: grid; place-items: center;
+    color: #fff; font: 700 16px/1 system-ui, sans-serif;
+    border: 3px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.5);
+  }
+  .pin.petak { background: var(--petak); border-radius: 6px; }
+  .pin.subota { background: var(--subota); border-radius: 50%; }
+  @media (prefers-color-scheme: dark) { .pin { color: #0b140d; border-color: #0b140d; } }
+  .legend .pin { width: 26px; height: 26px; font-size: 13px; border-width: 2px; }
+
+  .leaflet-popup-content { font-size: 16px; line-height: 1.4; margin: 12px 14px; }
+  .leaflet-popup-content b { font-size: 17px; }
+  .popup-day { display: inline-block; margin-top: 4px; font-weight: 700; }
+
+  .filter {
+    position: sticky; top: 0; z-index: 1000; background: var(--bg);
+    padding: 10px 0; margin: 0 -16px; padding-left: 16px; padding-right: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .filter-label { font-weight: 700; margin-bottom: 6px; display: block; }
+  .seg { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .seg button {
+    min-height: 48px; font: inherit; font-weight: 700; cursor: pointer;
+    border: 2px solid var(--border); border-radius: 10px; background: var(--surface); color: var(--text);
+  }
+  .seg button[aria-pressed="true"] { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+  .day-group { margin-top: 26px; }
+  .day-title {
+    margin: 0 0 4px; padding: 10px 14px; border-radius: 10px; font-size: 1.3rem;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .day-title.petak { background: var(--petak-soft); color: var(--text); border: 2px solid var(--petak); }
+  .day-title.subota { background: var(--subota-soft); color: var(--text); border: 2px solid var(--subota); }
+  .opstina-title { font-size: 1.1rem; margin: 18px 0 8px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px; margin: 0 0 12px; box-shadow: var(--shadow);
+    transition: box-shadow .3s, border-color .3s;
+  }
+  .card.highlight { border-color: var(--focus); box-shadow: 0 0 0 3px var(--focus); }
+  .card-head { display: flex; gap: 12px; align-items: flex-start; }
+  .card h4 { margin: 0; font-size: 1.2rem; line-height: 1.3; }
+  .meta { margin: 8px 0 0; display: grid; gap: 4px; }
+  .meta div { display: flex; gap: 6px; }
+  .meta dt { font-weight: 700; flex-shrink: 0; }
+  .meta dd { margin: 0; }
+  .day-tag { font-weight: 700; }
+  .day-tag.petak { color: var(--petak); }
+  .day-tag.subota { color: var(--subota); }
+  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px; text-align: center;
+    min-height: 52px; padding: 10px 12px; border-radius: 10px; font: inherit; font-weight: 700;
+    text-decoration: none; cursor: pointer; border: 2px solid var(--brand);
+  }
+  .btn-primary { background: var(--brand); color: var(--brand-text); }
+  .btn-secondary { background: transparent; color: var(--text); }
+  @media (max-width: 360px) { .actions { grid-template-columns: 1fr; } }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%) translateY(150%);
+    background: var(--text); color: var(--bg); padding: 12px 18px; border-radius: 10px;
+    font-weight: 700; z-index: 2000; transition: transform .25s, visibility .25s; max-width: calc(100% - 32px);
+    visibility: hidden;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); visibility: visible; }
+
+  footer { color: var(--muted); font-size: .95rem; padding: 24px 0 40px; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; scroll-behavior: auto !important; } }
+</style>
+</head>
+<body>
+
+<script>
+/* =====================================================================
+   IZMENI OVDE  –  svi podaci koje menjate su samo u ovom bloku.
+   - Tekst pod navodnicima slobodno menjajte ("...").
+   - Ne brišite zareze i zagrade.
+   - Dok neko polje sadrži "[" na početku, stranica ga prikazuje
+     žutom oznakom kao "još nepopunjeno".
+   ===================================================================== */
+const AKCIJA = {
+  dani: {
+    petak:  { naziv: "Petak, 11. decembar",  opstine: "Stari grad i Savski venac" },
+    subota: { naziv: "Subota, 12. decembar", opstine: "Novi Beograd i Zemun" }
+  }
+};
+
+// dan: "petak" ili "subota"  |  vreme i napomena: slobodan tekst
+const LOKACIJE = [
+  { id: 1, dan: "subota", opstina: "Novi Beograd", naziv: "Blok 11b – Aleksinačkih rudara",   adresa: "Aleksinačkih rudara, Blok 11b (MZ Ikarus)",            vreme: "Vreme okupljanja: uskoro", napomena: "[Napomena za lokaciju]", lat: 44.827359,  lng: 20.4178 },
+  { id: 2, dan: "subota", opstina: "Novi Beograd", naziv: "Studentski grad – Studentska 43",  adresa: "Studentska 43 (MZ Studentski grad)",                   vreme: "Vreme okupljanja: uskoro", napomena: "[Napomena za lokaciju]", lat: 44.825423,  lng: 20.402219 },
+  { id: 3, dan: "subota", opstina: "Novi Beograd", naziv: "Paviljoni – Sremskih odreda",      adresa: "Sremskih odreda, Paviljoni",                           vreme: "Vreme okupljanja: uskoro", napomena: "[Napomena za lokaciju]", lat: 44.8302,    lng: 20.402219 },
+  { id: 4, dan: "subota", opstina: "Zemun",        naziv: "Gradski park Zemun",               adresa: "Gradski park, Donji Grad",                             vreme: "Vreme okupljanja: uskoro", napomena: "[Napomena za lokaciju]", lat: 44.8406259, lng: 20.4086481 },
+  { id: 5, dan: "subota", opstina: "Zemun",        naziv: "Park Jelovac",                     adresa: "Lazara Savatića, Kalvarija",                           vreme: "Vreme okupljanja: uskoro", napomena: "[Napomena za lokaciju]", lat: 44.8379639, lng: 20.3942284 },
+  { id: 6, dan: "petak",  opstina: "Stari grad",   naziv: "Mali Kalemegdan",                  adresa: "Pjarona de Mondezira, Dorćol",                         vreme: "Vreme okupljanja: uskoro", napomena: "[Napomena za lokaciju]", lat: 44.8238125, lng: 20.4545625 },
+  { id: 7, dan: "petak",  opstina: "Stari grad",   naziv: "Spomenik braniocima Beograda 1915.", adresa: "Obala majora Dragutina Gavrilovića, Dorćol",         vreme: "Vreme okupljanja: uskoro", napomena: "[Napomena za lokaciju]", lat: 44.8294032, lng: 20.4496916 },
+  { id: 8, dan: "petak",  opstina: "Savski venac", naziv: "Park Milutina Milankovića",        adresa: "Tiršova, kod spomenika Milutinu Milankoviću",          vreme: "Vreme okupljanja: uskoro", napomena: "[Napomena za lokaciju]", lat: 44.7985709, lng: 20.4647844 },
+  { id: 9, dan: "petak",  opstina: "Savski venac", naziv: "Park „Lepi izgled“",               adresa: "Drinska (MZ Slobodan Penezić-Krcun)",                  vreme: "Vreme okupljanja: uskoro", napomena: "[Napomena za lokaciju]", lat: 44.7995571, lng: 20.4507577 }
+];
+/* ======================= KRAJ BLOKA ZA IZMENE ======================== */
+</script>
+
+<header class="top">
+  <div class="wrap">
+    <a class="logo-link" href="https://1posto.rs/" target="_blank" rel="noopener"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 78.052081 22.489584" role="img" aria-label="Fondacija 1%" class="logo"><g transform="translate(0,-274.51042)"><g ><text transform="scale(1.0010882,0.99891298)" y="287.93298" x="26.724518" style="font-style:normal;font-weight:normal;font-size:2.45143199px;font-family:sans-serif;fill:#4d4d4d;fill-opacity:1;stroke:none;stroke-width:0.0612858"><tspan style="font-weight:bold;font-size:6.86400938px;fill:#4d4d4d;stroke-width:0.0612858" y="287.93298" x="26.724518">Fondacija 1%</tspan></text><g transform="matrix(0.30038946,0,0,0.30068637,-3.680671,254.42554)"><path d="M 45.262649,141.47182 C 40.99298,140.67681 39.731336,140.37271 37.45744,139.5905 24.799802,135.23635 15.514511,124.49043 12.808294,111.06391 12.070481,107.40336 12.136444,100.31366 12.942073,96.685336 14.407674,90.084678 16.95723,84.87813 21.196959,79.827704 26.244804,73.81464 32.993767,69.692406 41.169896,67.628333 c 2.698838,-0.681324 3.282069,-0.732911 8.326086,-0.736443 4.25686,-0.003 5.907879,0.09985 7.672917,0.477878 7.064378,1.513028 13.185093,4.743962 18.315337,9.668094 6.88765,6.610934 10.808365,14.766862 11.553238,24.033218 0.865061,10.76154 -2.800059,21.14391 -10.214549,28.93527 -5.10448,5.36394 -11.50615,9.02386 -18.765177,10.72831 -2.363785,0.55503 -3.694186,0.6911 -7.503432,0.76748 -2.546615,0.0511 -4.927865,0.0374 -5.291667,-0.0303 z m 11.1125,-39.51217 V 77.896824 l -1.256771,0.376439 c -0.691224,0.207041 -4.233333,1.306991 -7.871354,2.444333 l -6.614584,2.067893 -0.06769,21.618491 -0.06769,21.61849 h 7.939045 7.939048 z m 16.031573,23.20199 c 1.793925,-0.923 3.808738,-3.16748 4.468286,-4.9776 1.155549,-3.17141 0.459835,-6.67425 -1.822453,-9.17583 -0.714248,-0.78288 -1.904873,-1.74202 -2.645833,-2.13142 -1.19833,-0.62977 -1.639567,-0.70832 -3.993031,-0.71085 -2.214862,-0.002 -2.843027,0.0943 -3.856453,0.59373 -3.063695,1.50974 -5.005091,4.33742 -5.211755,7.59103 -0.06521,1.02661 0.0104,2.34281 0.168005,2.92489 0.464839,1.71674 1.924283,3.87728 3.343953,4.95035 1.956977,1.4792 3.043584,1.79783 5.820833,1.70686 1.952125,-0.0639 2.624029,-0.20292 3.728448,-0.77116 z M 32.344414,104.26772 c 1.845888,-0.84507 3.523113,-2.52728 4.425856,-4.439001 0.582049,-1.232593 0.686797,-1.81949 0.684733,-3.836459 -0.0021,-2.088118 -0.09284,-2.553414 -0.736875,-3.779811 -2.358414,-4.491033 -7.047411,-6.331809 -11.649978,-4.573473 -3.500687,1.337381 -6.081757,5.666417 -5.613409,9.414949 0.337572,2.701832 2.400184,5.804925 4.66921,7.024575 2.313627,1.24363 5.744815,1.32261 8.220463,0.18922 z" style="fill:#5695ca;stroke-width:0.26458335"></path><path d="m 43.939732,141.22604 c -6.095177,-0.96374 -12.309387,-3.66546 -17.330209,-7.53455 -2.136507,-1.64642 -5.603866,-5.28626 -7.323663,-7.68798 -6.842959,-9.55628 -8.779525,-22.24257 -5.109347,-33.470904 1.847193,-5.651198 4.686212,-10.224632 9.120561,-14.692501 7.540178,-7.597174 17.406727,-11.485774 27.9187,-11.003308 17.238705,0.791203 31.373901,12.749352 35.088878,29.68463 0.308997,1.408602 0.584947,3.948293 0.675588,6.217713 0.266644,6.67614 -0.82627,11.90319 -3.73592,17.86769 -5.494263,11.26272 -15.698883,18.76111 -28.069567,20.62563 -3.186917,0.48033 -8.174575,0.47748 -11.235021,-0.006 z m 12.635246,-39.21451 c 0.04984,-17.814046 -0.01086,-24.143229 -0.231513,-24.143229 -0.164478,0 -3.85591,1.101329 -8.203181,2.447396 l -7.904134,2.447396 -2.65e-4,21.585587 c -1.61e-4,11.87208 0.0808,21.66668 0.179904,21.76579 0.09911,0.0991 3.760279,0.14872 8.135938,0.11024 l 7.955714,-0.07 z m 14.881421,23.59355 c 3.752115,-1.22747 6.34156,-5.23166 6.014901,-9.30115 -0.268145,-3.34051 -2.329842,-6.25153 -5.453981,-7.70075 -2.15822,-1.00115 -5.084411,-0.9836 -7.307795,0.0438 -1.925598,0.88981 -3.645022,2.50063 -4.567063,4.27859 -0.982633,1.8948 -1.138589,5.20838 -0.344286,7.31496 1.748155,4.63633 6.791015,6.9568 11.658224,5.36453 z m -39.424868,-21.0941 c 2.030493,-0.74748 4.213083,-2.96126 5.0095,-5.081086 2.420342,-6.442237 -2.439181,-12.991005 -9.276953,-12.501765 -3.232182,0.231262 -6.331676,2.413893 -7.717787,5.434781 -0.884597,1.927894 -0.824925,5.489189 0.125968,7.517799 2.124423,4.532191 6.97801,6.427201 11.859272,4.630271 z" style="fill:#84549d;stroke-width:0.26458335"></path><path d="m 45.791815,141.35837 c -12.83168,-1.56753 -23.623215,-9.01017 -29.465233,-20.3214 -4.389688,-8.49924 -5.195813,-19.18638 -2.150069,-28.504364 1.847193,-5.651198 4.686212,-10.224632 9.120561,-14.692501 7.540178,-7.597174 17.406727,-11.485774 27.9187,-11.003308 15.568224,0.714533 28.727999,10.526395 33.810642,25.209047 1.541132,4.451995 1.903963,6.770986 1.900767,12.148496 -0.0031,5.29317 -0.35741,7.68631 -1.756209,11.86373 -2.312101,6.90492 -7.141242,13.53003 -13.148668,18.03867 -4.344474,3.26058 -10.531846,5.94229 -15.82502,6.85883 -3.017081,0.52242 -7.884042,0.71082 -10.405471,0.4028 z m 10.847917,-39.28069 c 0,-17.756613 -0.07934,-24.209379 -0.297659,-24.209379 -0.163713,0 -3.854518,1.101329 -8.201789,2.447396 l -7.904134,2.447396 -2.65e-4,21.761977 -3.2e-4,21.76198 h 8.202084 8.202083 z m 15.765471,23.15958 c 1.931358,-0.95081 3.341915,-2.41625 4.3071,-4.4747 0.582353,-1.24199 0.697222,-1.8584 0.697222,-3.74149 0,-2.01025 -0.09345,-2.44433 -0.862457,-4.00642 -1.005959,-2.04339 -2.4441,-3.44398 -4.529749,-4.41147 -2.15822,-1.00115 -5.084411,-0.9836 -7.307795,0.0438 -1.912744,0.88387 -3.63107,2.4869 -4.586338,4.27859 -0.635272,1.19152 -0.705329,1.59886 -0.705329,4.10105 0,2.50412 0.07011,2.91099 0.710849,4.12532 1.043458,1.97757 3.322907,3.94828 5.324718,4.60351 2.298131,0.75223 4.741045,0.57013 6.951779,-0.51821 z M 32.031531,104.51098 c 2.030493,-0.74748 4.213083,-2.96126 5.0095,-5.081086 2.420342,-6.442237 -2.439181,-12.991005 -9.276953,-12.501765 -3.232182,0.231262 -6.331676,2.413893 -7.717787,5.434781 -0.884597,1.927894 -0.824925,5.489189 0.125968,7.517799 2.124423,4.532191 6.97801,6.427201 11.859272,4.630271 z" style="fill:#695aa3;stroke-width:0.26458335"></path><path d="m 45.791815,141.35837 c -7.769378,-0.94912 -14.611631,-3.93685 -20.585852,-8.98901 -1.803012,-1.52474 -5.60781,-5.69887 -5.607871,-6.15224 -1.5e-5,-0.11122 1.637082,-0.13551 3.637994,-0.054 2.000911,0.0815 15.240011,0.44375 29.420222,0.80491 14.180212,0.36117 25.842072,0.71653 25.915245,0.7897 0.241898,0.2419 -4.29715,4.6257 -6.559981,6.33562 -4.300281,3.2495 -10.508763,5.94351 -15.814286,6.86219 -3.017081,0.52242 -7.884042,0.71082 -10.405471,0.4028 z m 34.461073,-29.29214 -4.035803,-0.0805 -1.09114,-1.18375 c -2.232398,-2.42186 -5.774097,-3.47258 -8.970819,-2.66138 -1.715752,0.43539 -4.280157,1.94529 -4.847913,2.85442 -0.246724,0.39506 -0.66589,0.47534 -2.482168,0.47534 H 56.639732 V 94.669344 c 0,-12.268917 -0.08029,-16.801043 -0.297659,-16.801043 -0.163713,0 -3.854518,1.101329 -8.201789,2.447396 l -7.904134,2.447396 -2.65e-4,14.130809 -2.64e-4,14.130808 -5.490104,-0.17037 c -3.019558,-0.0937 -9.202405,-0.25029 -13.739661,-0.34796 L 12.7563,110.3288 12.539189,108.3199 c -0.95322,-8.819481 1.20189,-17.523734 6.229364,-25.159932 2.169234,-3.294836 6.897386,-7.945989 10.429634,-10.259784 6.511643,-4.265445 14.322821,-6.416553 22.017587,-6.063387 15.568224,0.714533 28.727999,10.526395 33.810642,25.209047 1.519896,4.390647 1.898573,6.780951 1.903632,12.016206 0.0028,2.87747 -0.132059,5.30627 -0.356211,6.41615 l -0.360688,1.78594 -0.962229,-0.0587 c -0.529225,-0.0323 -2.778339,-0.0949 -4.998032,-0.13918 z m -48.221357,-7.55525 c 2.030493,-0.74748 4.213083,-2.96126 5.0095,-5.081086 2.420342,-6.442237 -2.439181,-12.991005 -9.276953,-12.501765 -3.232182,0.231262 -6.331676,2.413893 -7.717787,5.434781 -0.884597,1.927894 -0.824925,5.489189 0.125968,7.517799 2.124423,4.532191 6.97801,6.427201 11.859272,4.630271 z" style="fill:#5166ad;stroke-width:0.26458335"></path><path d="m 45.791815,141.35837 c -7.769378,-0.94912 -14.611631,-3.93685 -20.585852,-8.98901 -1.803012,-1.52474 -5.60781,-5.69887 -5.607871,-6.15224 -1.5e-5,-0.11122 1.637082,-0.13551 3.637994,-0.054 2.000911,0.0815 15.240011,0.44375 29.420222,0.80491 14.180212,0.36117 25.842072,0.71653 25.915245,0.7897 0.241898,0.2419 -4.29715,4.6257 -6.559981,6.33562 -4.300281,3.2495 -10.508763,5.94351 -15.814286,6.86219 -3.017081,0.52242 -7.884042,0.71082 -10.405471,0.4028 z M 70.530358,94.654564 C 64.418483,94.473856 58.792779,94.313961 58.028795,94.299237 l -1.389063,-0.02677 v -8.202084 c 0,-5.899272 -0.08357,-8.202084 -0.297659,-8.202084 -0.163713,0 -3.854518,1.101329 -8.201789,2.447396 l -7.904134,2.447396 -2.65e-4,5.490105 -3.2e-4,5.490104 h -1.413327 c -1.402035,0 -1.415791,-0.0079 -1.721329,-0.992188 -0.453398,-1.460568 -2.008415,-3.42293 -3.426378,-4.323938 -2.64045,-1.677803 -6.17683,-2.008697 -8.846537,-0.827759 -1.631895,0.721865 -3.798456,2.772249 -4.599334,4.352709 l -0.63951,1.262009 h -2.773668 c -1.525517,0 -2.773667,-0.05244 -2.773667,-0.116522 0,-0.405776 1.542747,-4.290388 2.317966,-5.836603 2.707728,-5.400701 7.721457,-11.008974 12.838406,-14.360826 9.686474,-6.345116 22.015071,-7.84163 32.915354,-3.99545 11.321603,3.994843 20.026194,13.188259 23.455242,24.772422 l 0.411178,1.389063 -2.168551,-0.04155 C 82.618705,95.001817 76.642233,94.835268 70.530358,94.65456 Z" style="fill:#77509b;stroke-width:0.26458335"></path><path d="M 70.530358,94.654564 C 64.418483,94.473856 58.792779,94.313961 58.028795,94.299237 l -1.389063,-0.02677 v -8.202084 c 0,-5.899272 -0.08357,-8.202084 -0.297659,-8.202084 -0.163713,0 -3.854518,1.101329 -8.201789,2.447396 l -7.904134,2.447396 -2.65e-4,5.490105 -3.2e-4,5.490104 h -1.413327 c -1.402035,0 -1.415791,-0.0079 -1.721329,-0.992188 -0.453398,-1.460568 -2.008415,-3.42293 -3.426378,-4.323938 -2.64045,-1.677803 -6.17683,-2.008697 -8.846537,-0.827759 -1.631895,0.721865 -3.798456,2.772249 -4.599334,4.352709 l -0.63951,1.262009 h -2.773668 c -1.525517,0 -2.773667,-0.05244 -2.773667,-0.116522 0,-0.405776 1.542747,-4.290388 2.317966,-5.836603 2.707728,-5.400701 7.721457,-11.008974 12.838406,-14.360826 9.686474,-6.345116 22.015071,-7.84163 32.915354,-3.99545 11.321603,3.994843 20.026194,13.188259 23.455242,24.772422 l 0.411178,1.389063 -2.168551,-0.04155 C 82.618705,95.001817 76.642233,94.835268 70.530358,94.65456 Z" style="fill:#3070b6;stroke-width:0.26458335"></path><path d="M 66.892337,81.754418 56.639732,81.502371 v -1.817035 c 0,-1.262279 -0.09944,-1.817035 -0.325702,-1.817035 -0.179136,0 -2.709214,0.727443 -5.622396,1.616539 L 45.39494,81.101378 36.531399,80.909897 C 31.65645,80.804583 26.120044,80.642687 24.228273,80.55013 l -3.439583,-0.168287 2.778125,-2.78263 c 3.131646,-3.136724 5.538846,-4.884755 9.392708,-6.820682 5.596573,-2.81135 10.40627,-3.901747 17.065626,-3.868915 4.886082,0.02409 7.921956,0.525104 12.088392,1.994966 5.852994,2.064857 11.665895,5.95263 15.353816,10.268909 2.465271,2.88531 2.482665,2.938402 0.943663,2.880559 -0.696343,-0.02617 -5.879751,-0.161006 -11.518683,-0.299632 z" style="fill:#0675bc;stroke-width:0.26458335"></path></g></g></g></svg></a>
+  </div>
+</header>
+
+<main class="wrap">
+  <section aria-labelledby="h-dani">
+    <h2 id="h-dani">Kada i gde</h2>
+    <div class="days" id="dani"></div>
+  </section>
+
+  <section aria-labelledby="h-mapa">
+    <h2 id="h-mapa">Mapa lokacija</h2>
+    <div id="map" role="region" aria-label="Mapa sa lokacijama sadnje"></div>
+    <ul class="legend" id="legenda" aria-label="Legenda mape"></ul>
+  </section>
+
+  <section aria-labelledby="h-lok">
+    <h2 id="h-lok">Lokacije</h2>
+    <div class="filter" role="group" aria-labelledby="filter-label">
+      <span class="filter-label" id="filter-label">Prikaži dan:</span>
+      <div class="seg">
+        <button type="button" data-f="sve" aria-pressed="true">Sve</button>
+        <button type="button" data-f="petak" aria-pressed="false">Petak</button>
+        <button type="button" data-f="subota" aria-pressed="false">Subota</button>
+      </div>
+    </div>
+    <div id="kartice"></div>
+  </section>
+</main>
+
+<footer class="wrap">
+  Mapa: © saradnici <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>.
+  Dugme „Navigiraj“ otvara Google Maps sa uputstvima do lokacije.
+</footer>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"
+        integrity="sha512-puJW3E/qXDqYp9IfhAI54BJEaWIfloJ7JWs7OeD5i6ruC9JZL1gERT1wjtwXFlh7CjE7ZJ+/vcRZRkIYIb6p4g=="
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<script>
+(function () {
+  "use strict";
+  const DANI_RED = ["petak", "subota"];
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  // Tekst koji počinje sa "[" je placeholder – prikazujemo ga sa žutom oznakom
+  const txt = (s) => /^\s*\[/.test(s) ? '<span class="ph">' + esc(s) + "</span>" : esc(s);
+  const danPun = (d) => AKCIJA.dani[d].naziv;
+  const danSaOpstinama = (d) => AKCIJA.dani[d].naziv + " – " + AKCIJA.dani[d].opstine;
+
+  // --- Dani ---
+  $("#dani").innerHTML = DANI_RED.map((d) =>
+    '<div class="day-box ' + d + '"><strong>' + esc(AKCIJA.dani[d].naziv) + "</strong>" + esc(AKCIJA.dani[d].opstine) + "</div>"
+  ).join("");
+
+  // --- Kartice: po danu, pa po opštini ---
+  const navUrl = (l) => "https://www.google.com/maps/dir/?api=1&destination=" + l.lat + "," + l.lng;
+  let html = "";
+  DANI_RED.forEach((d) => {
+    const uDanu = LOKACIJE.filter((l) => l.dan === d);
+    if (!uDanu.length) return;
+    html += '<div class="day-group" data-dan="' + d + '">';
+    html += '<h3 class="day-title ' + d + '"><span class="pin ' + d + '" aria-hidden="true" style="width:22px;height:22px;border-width:2px"></span>' + esc(danSaOpstinama(d)) + "</h3>";
+    const opstine = [...new Set(uDanu.map((l) => l.opstina))];
+    opstine.forEach((o) => {
+      html += '<p class="opstina-title">' + esc(o) + "</p>";
+      uDanu.filter((l) => l.opstina === o).forEach((l) => {
+        html +=
+          '<article class="card" id="lok-' + l.id + '" tabindex="-1" aria-labelledby="lok-n-' + l.id + '">' +
+            '<div class="card-head"><span class="pin ' + d + '" aria-hidden="true">' + l.id + "</span>" +
+            '<h4 id="lok-n-' + l.id + '"><span class="sr">' + l.id + ". </span>" + txt(l.naziv) + "</h4></div>" +
+            '<dl class="meta">' +
+              '<div><dt>Dan:</dt><dd class="day-tag ' + d + '">' + esc(danPun(d)) + "</dd></div>" +
+              "<div><dt>Vreme:</dt><dd>" + txt(l.vreme) + "</dd></div>" +
+              "<div><dt>Adresa:</dt><dd>" + txt(l.adresa) + "</dd></div>" +
+              "<div><dt>Opština:</dt><dd>" + esc(l.opstina) + "</dd></div>" +
+              "<div><dt>Napomena:</dt><dd>" + txt(l.napomena) + "</dd></div>" +
+            "</dl>" +
+            '<div class="actions">' +
+              '<a class="btn btn-primary" href="' + navUrl(l) + '" target="_blank" rel="noopener">➜ Navigiraj</a>' +
+              '<button type="button" class="btn btn-secondary" data-copy="' + l.id + '">Kopiraj adresu</button>' +
+            "</div>" +
+          "</article>";
+      });
+    });
+    html += "</div>";
+  });
+  $("#kartice").innerHTML = html;
+  // broj ispred naziva služi samo čitačima ekrana (broj je već u pinu)
+  const st = document.createElement("style");
+  st.textContent = ".sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}";
+  document.head.appendChild(st);
+
+  // --- Kopiranje adrese ---
+  const toast = $("#toast");
+  let toastT;
+  function showToast(m) { toast.textContent = m; toast.classList.add("show"); clearTimeout(toastT); toastT = setTimeout(() => toast.classList.remove("show"), 2200); }
+  function copyText(t) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(t);
+    return new Promise((res, rej) => { // rezerva za starije/ugrađene browsere (Viber, WhatsApp)
+      const ta = document.createElement("textarea");
+      ta.value = t; ta.setAttribute("readonly", ""); ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy") ? res() : rej(); } catch (e) { rej(e); }
+      document.body.removeChild(ta);
+    });
+  }
+  $("#kartice").addEventListener("click", (e) => {
+    const b = e.target.closest("[data-copy]");
+    if (!b) return;
+    const l = LOKACIJE.find((x) => String(x.id) === b.dataset.copy);
+    const t = l.naziv + ", " + l.adresa + ", " + l.opstina + ", Beograd\n" + l.lat + ", " + l.lng;
+    copyText(t).then(() => showToast("Adresa je kopirana ✓"), () => { window.prompt("Kopirajte adresu:", t); });
+  });
+
+  // --- Mapa ---
+  const markeri = {};
+  let map = null;
+  const legenda = DANI_RED.map((d) =>
+    '<li><span class="pin ' + d + '" aria-hidden="true">' + (d === "petak" ? "P" : "S") + "</span>" +
+    esc(AKCIJA.dani[d].naziv) + " (" + (d === "petak" ? "kvadrat" : "krug") + ")</li>").join("");
+  $("#legenda").innerHTML = legenda;
+
+  function scrollToCard(id) {
+    const c = document.getElementById("lok-" + id);
+    if (!c) return;
+    // pomeri tako da kartica ne bude ispod lepljivog filtera
+    const filterH = document.querySelector(".filter").offsetHeight;
+    window.scrollTo({ top: c.getBoundingClientRect().top + window.scrollY - filterH - 12, behavior: "smooth" });
+    c.classList.add("highlight");
+    setTimeout(() => c.classList.remove("highlight"), 2500);
+    c.focus({ preventScroll: true });
+  }
+
+  if (window.L) {
+    map = L.map("map", { scrollWheelZoom: false, tap: true });
+    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 19,
+      attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+    }).addTo(map);
+    LOKACIJE.forEach((l) => {
+      const icon = L.divIcon({ className: "", html: '<div class="pin ' + l.dan + '">' + l.id + "</div>", iconSize: [34, 34], iconAnchor: [17, 17], popupAnchor: [0, -16] });
+      const m = L.marker([l.lat, l.lng], { icon, title: l.id + ". " + l.naziv + " – " + danPun(l.dan), keyboard: true })
+        .bindPopup("<b>" + l.id + ". " + esc(l.naziv) + '</b><br><span class="popup-day">' + esc(danPun(l.dan)) + "</span><br>" + esc(l.vreme));
+      m.on("click", () => setTimeout(() => scrollToCard(l.id), 600));
+      m.addTo(map);
+      markeri[l.id] = m;
+    });
+  } else {
+    $("#map").innerHTML = '<p class="map-fallback">Mapa trenutno ne može da se učita. Sve lokacije i dugmad za navigaciju su ispod.</p>';
+  }
+
+  function fit(lista) {
+    if (!map || !lista.length) return;
+    map.fitBounds(L.latLngBounds(lista.map((l) => [l.lat, l.lng])), { padding: [30, 30], maxZoom: 16 });
+  }
+
+  // --- Filter Sve / Petak / Subota ---
+  function primeni(f) {
+    document.querySelectorAll(".seg button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.f === f)));
+    document.querySelectorAll(".day-group").forEach((g) => { g.hidden = !(f === "sve" || g.dataset.dan === f); });
+    const vidljive = LOKACIJE.filter((l) => f === "sve" || l.dan === f);
+    if (map) {
+      map.closePopup();
+      LOKACIJE.forEach((l) => {
+        const m = markeri[l.id];
+        const treba = vidljive.includes(l);
+        if (treba && !map.hasLayer(m)) m.addTo(map);
+        if (!treba && map.hasLayer(m)) map.removeLayer(m);
+      });
+      fit(vidljive);
+    }
+  }
+  document.querySelector(".seg").addEventListener("click", (e) => {
+    const b = e.target.closest("button[data-f]");
+    if (b) primeni(b.dataset.f);
+  });
+  primeni("sve");
+})();
+</script>
+</body>
+</html>
